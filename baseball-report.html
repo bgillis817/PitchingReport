@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Baseball Pitching Report</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f9fafb;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+        
+        .header {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+        
+        .logo-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 24px;
+        }
+        
+        .logo {
+            height: 80px;
+            width: auto;
+            max-width: 200px;
+        }
+        
+        .player-info {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .player-avatar {
+            width: 64px;
+            height: 64px;
+            background: #2563eb;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 20px;
+        }
+        
+        .player-name {
+            font-size: 32px;
+            font-weight: bold;
+            color: #1f2937;
+            margin: 0;
+        }
+        
+        .player-subtitle {
+            color: #6b7280;
+            margin: 4px 0;
+        }
+        
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .save-button {
+            padding: 8px 16px;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        
+        .save-button:hover {
+            background: #1d4ed8;
+        }
+        
+        .share-button {
+            padding: 8px 16px;
+            background: #059669;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        
+        .share-button:hover {
+            background: #047857;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 8px;
+        }
+        
+        @media (max-width: 768px) {
+            .button-group {
+                flex-direction: column;
+            }
+        }
+        
+        .file-input {
+            padding: 8px 16px;
+            border: 2px solid #d1d5db;
+            border-radius: 8px;
+            background: white;
+        }
+        
+        .pitcher-select {
+            padding: 8px 16px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            background: white;
+            min-width: 200px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 16px;
+        }
+        
+        .stat-card {
+            text-align: center;
+            padding: 16px;
+            background: #f9fafb;
+            border-radius: 8px;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #1f2937;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #6b7280;
+            margin-top: 4px;
+        }
+        
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin: 24px 0;
+        }
+        
+        .chart-container {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #e5e7eb;
+        }
+        
+        .chart-title {
+            font-weight: bold;
+            margin-bottom: 16px;
+            color: #1f2937;
+        }
+        
+        .velocity-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        
+        .pitch-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+        }
+        
+        .pitch-label {
+            font-size: 14px;
+            font-weight: 500;
+            width: 80px;
+        }
+        
+        .velocity-bar {
+            flex: 1;
+            background: #e5e7eb;
+            border-radius: 6px;
+            height: 24px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .velocity-fill {
+            height: 100%;
+            border-radius: 6px;
+        }
+        
+        .velocity-text {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            color: white;
+        }
+        
+        .break-chart {
+            width: 100%;
+            height: 320px;
+            background: #f3f4f6;
+            border-radius: 8px;
+        }
+        
+        .legend {
+            margin-top: 16px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            font-size: 12px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        
+        .table-container {
+            background: white;
+            border-radius: 12px;
+            border: 1px solid #e5e7eb;
+            overflow: hidden;
+            margin-bottom: 24px;
+        }
+        
+        .table-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 16px;
+            color: #1f2937;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        
+        th {
+            background: #f9fafb;
+            padding: 12px;
+            text-align: center;
+            font-weight: bold;
+            color: #1f2937;
+        }
+        
+        th:first-child {
+            text-align: left;
+        }
+        
+        td {
+            padding: 12px;
+            text-align: center;
+            border-top: 1px solid #e5e7eb;
+        }
+        
+        td:first-child {
+            text-align: left;
+            font-weight: bold;
+            color: white;
+        }
+        
+        .totals-row {
+            border-top: 2px solid #d1d5db;
+            background: #f9fafb;
+            font-weight: bold;
+        }
+        
+        .totals-row td:first-child {
+            color: #1f2937;
+        }
+        
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 300px;
+            font-size: 18px;
+            color: #6b7280;
+        }
+        
+        .error {
+            text-align: center;
+            padding: 32px;
+            color: #ef4444;
+        }
+        
+        .upload-area {
+            border: 2px dashed #d1d5db;
+            border-radius: 8px;
+            padding: 32px;
+            text-align: center;
+            background: white;
+            margin-bottom: 24px;
+        }
+        
+        .upload-text {
+            color: #6b7280;
+            margin-top: 8px;
+        }
+        
+        @media (max-width: 768px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header-content {
+                flex-direction: column;
+                gap: 16px;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo-container">
+            <!-- To use the Navigators logo, download it and save as 'navs_logo.png' in the same folder as this HTML file -->
+            <img src="navs_logo.png" 
+                 alt="Navigators Logo" 
+                 class="logo"
+                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+            <div style="width:120px;height:80px;background:#1e40af;border-radius:12px;display:none;align-items:center;justify-content:center;font-weight:bold;font-size:18px;color:white;font-family:serif;text-align:center;">NAVIGATORS</div>
+        </div>
+        
+        <div id="upload-section" class="upload-area">
+            <h2>Upload CSV</h2>
+            <input type="file" id="csvFile" accept=".csv" class="file-input" />
+            <div class="upload-text">Input File</div>
+        </div>
+        
+        <div id="app-content" style="display: none;">
+            <!-- Content will be populated by JavaScript -->
+        </div>
+    </div>
+
+    <script>
+        let allData = [];
+        let pitchers = [];
+        let selectedPitcher = '';
+
+        const pitchColors = {
+            'Fastball': '#FF1493',
+            '4-Seam': '#FF1493',
+            'Four-Seam': '#FF1493',
+            'Sinker': '#32CD32',
+            '2-Seam': '#32CD32',
+            'Two-Seam': '#32CD32',
+            'Slider': '#800080',
+            'Sweeper': '#800080',
+            'GyroSL': '#800080',
+            'Changeup': '#FF8C00',
+            'KickCH': '#FF8C00',
+            'Splitter': '#FF8C00',
+            'Curveball': '#0000FF',
+            'Knuckle Drop': '#0000FF',
+            'Cutter': '#FFD700'
+        };
+
+        function getPitchColor(pitchType) {
+            return pitchColors[pitchType] || '#666666';
+        }
+
+        document.getElementById('csvFile').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                Papa.parse(file, {
+                    header: true,
+                    dynamicTyping: true,
+                    skipEmptyLines: true,
+                    complete: function(results) {
+                        allData = results.data.filter(row => row && row.Pitcher);
+                        pitchers = [...new Set(allData.map(row => row.Pitcher))].sort();
+                        if (pitchers.length > 0) {
+                            selectedPitcher = pitchers[0];
+                            document.getElementById('upload-section').style.display = 'none';
+                            document.getElementById('app-content').style.display = 'block';
+                            renderApp();
+                        }
+                    },
+                    error: function(error) {
+                        alert('Error parsing CSV: ' + error.message);
+                    }
+                });
+            }
+        });
+
+        function calculateAdvancedStats(pitcherData) {
+            if (!pitcherData || pitcherData.length === 0) {
+                return {
+                    totalPitches: 0,
+                    plateAppearances: 0,
+                    strikeRate: 0,
+                    whiffRate: 0,
+                    firstPitchStrikeRate: 0,
+                    zoneRate: 0,
+                    chaseRate: 0,
+                    avgExitVelo: 0,
+                    strikeoutRate: 0,
+                    walkRate: 0,
+                    kMinusBBRate: 0,
+                    ballsInPlay: 0
+                };
+            }
+
+            const totalPitches = pitcherData.length;
+            
+            const strikes = pitcherData.filter(p => 
+                ['StrikeCalled', 'StrikeSwinging', 'FoulBallNotFieldable', 'FoulBallFieldable', 'InPlay'].includes(p.PitchCall)
+            );
+            const strikeRate = (strikes.length / totalPitches * 100);
+            
+            const swings = pitcherData.filter(row => 
+                ['StrikeSwinging', 'InPlay', 'FoulBallNotFieldable', 'FoulBallFieldable'].includes(row.PitchCall)
+            );
+            const whiffs = pitcherData.filter(row => row.PitchCall === 'StrikeSwinging');
+            const whiffRate = swings.length > 0 ? (whiffs.length / swings.length * 100) : 0;
+            
+            const firstPitches = pitcherData.filter(row => row.PitchofPA === 1);
+            const firstPitchStrikes = firstPitches.filter(p => 
+                ['StrikeCalled', 'StrikeSwinging', 'FoulBallNotFieldable', 'FoulBallFieldable', 'InPlay'].includes(p.PitchCall)
+            );
+            const firstPitchStrikeRate = firstPitches.length > 0 ? (firstPitchStrikes.length / firstPitches.length * 100) : 0;
+            
+            const inZonePitches = pitcherData.filter(row => {
+                const height = row.PlateLocHeight;
+                const side = row.PlateLocSide;
+                if (height == null || side == null) return false;
+                return height >= 1.5 && height <= 3.5 && side >= -0.85 && side <= 0.85;
+            });
+            const zoneRate = (inZonePitches.length / totalPitches * 100);
+            
+            const outOfZone = pitcherData.filter(row => {
+                const height = row.PlateLocHeight;
+                const side = row.PlateLocSide;
+                if (height == null || side == null) return false;
+                return !(height >= 1.5 && height <= 3.5 && side >= -0.85 && side <= 0.85);
+            });
+            const chases = outOfZone.filter(row => 
+                ['StrikeSwinging', 'InPlay', 'FoulBallNotFieldable', 'FoulBallFieldable'].includes(row.PitchCall)
+            );
+            const chaseRate = outOfZone.length > 0 ? (chases.length / outOfZone.length * 100) : 0;
+            
+            const ballsInPlay = pitcherData.filter(row => row.PitchCall === 'InPlay' && row.ExitSpeed != null);
+            const avgExitVelo = ballsInPlay.length > 0 ? 
+                (ballsInPlay.reduce((sum, row) => sum + row.ExitSpeed, 0) / ballsInPlay.length) : 0;
+            
+            const strikeouts = pitcherData.filter(row => row.KorBB === 'Strikeout').length;
+            const walks = pitcherData.filter(row => row.KorBB === 'Walk').length;
+            const plateAppearances = [...new Set(pitcherData.map(row => `${row.Date}-${row.Inning}-${row.PAofInning}`))].length;
+            
+            const strikeoutRate = plateAppearances > 0 ? (strikeouts / plateAppearances * 100) : 0;
+            const walkRate = plateAppearances > 0 ? (walks / plateAppearances * 100) : 0;
+            const kMinusBBRate = strikeoutRate - walkRate;
+
+            return {
+                totalPitches,
+                plateAppearances,
+                strikeRate,
+                whiffRate,
+                firstPitchStrikeRate,
+                zoneRate,
+                chaseRate,
+                avgExitVelo,
+                strikeoutRate,
+                walkRate,
+                kMinusBBRate,
+                ballsInPlay: ballsInPlay.length
+            };
+        }
+
+        function calculatePitcherStats(pitcherData) {
+            const totalPitches = pitcherData.length;
+            const pitchTypeStats = {};
+            const pitchTypes = [...new Set(pitcherData.map(p => p.TaggedPitchType))].filter(Boolean);
+            
+            pitchTypes.forEach(type => {
+                const typePitches = pitcherData.filter(p => p.TaggedPitchType === type);
+                const avgVelo = _.mean(typePitches.map(p => p.RelSpeed).filter(Boolean));
+                const avgSpin = _.mean(typePitches.map(p => p.SpinRate).filter(Boolean));
+                const avgHorzBreak = _.mean(typePitches.map(p => p.HorzBreak).filter(Boolean));
+                const avgVertBreak = _.mean(typePitches.map(p => p.InducedVertBreak).filter(Boolean));
+                
+                const pitchSwings = typePitches.filter(row => 
+                    ['StrikeSwinging', 'InPlay', 'FoulBallNotFieldable', 'FoulBallFieldable'].includes(row.PitchCall)
+                );
+                const pitchWhiffs = typePitches.filter(row => row.PitchCall === 'StrikeSwinging');
+                const pitchWhiffRate = pitchSwings.length > 0 ? (pitchWhiffs.length / pitchSwings.length * 100) : 0;
+                
+                const pitchInZone = typePitches.filter(row => {
+                    const height = row.PlateLocHeight;
+                    const side = row.PlateLocSide;
+                    if (height == null || side == null) return false;
+                    return height >= 1.5 && height <= 3.5 && side >= -0.85 && side <= 0.85;
+                });
+                const pitchZoneRate = (pitchInZone.length / typePitches.length * 100);
+                
+                const pitchOutOfZone = typePitches.filter(row => {
+                    const height = row.PlateLocHeight;
+                    const side = row.PlateLocSide;
+                    if (height == null || side == null) return false;
+                    return !(height >= 1.5 && height <= 3.5 && side >= -0.85 && side <= 0.85);
+                });
+                const pitchChases = pitchOutOfZone.filter(row => 
+                    ['StrikeSwinging', 'InPlay', 'FoulBallNotFieldable', 'FoulBallFieldable'].includes(row.PitchCall)
+                );
+                const pitchChaseRate = pitchOutOfZone.length > 0 ? (pitchChases.length / pitchOutOfZone.length * 100) : 0;
+
+                pitchTypeStats[type] = {
+                    count: typePitches.length,
+                    percentage: (typePitches.length / totalPitches * 100).toFixed(1),
+                    avgVelo: avgVelo ? avgVelo.toFixed(1) : '0',
+                    avgSpin: avgSpin ? Math.round(avgSpin) : 0,
+                    avgHorzBreak: avgHorzBreak ? avgHorzBreak.toFixed(1) : '0',
+                    avgVertBreak: avgVertBreak ? avgVertBreak.toFixed(1) : '0',
+                    whiffRate: pitchWhiffRate.toFixed(1),
+                    zoneRate: pitchZoneRate.toFixed(1),
+                    chaseRate: pitchChaseRate.toFixed(1),
+                    pitches: typePitches
+                };
+            });
+
+            const advancedStats = calculateAdvancedStats(pitcherData);
+
+            return {
+                ...advancedStats,
+                pitchTypeStats,
+                pitchTypes
+            };
+        }
+
+        function renderVelocityChart(pitchTypeStats) {
+            let html = '<div class="chart-container"><h3 class="chart-title">Pitch Velocity Distribution</h3>';
+            
+            if (!pitchTypeStats || Object.keys(pitchTypeStats).length === 0) {
+                html += '<div style="text-align: center; color: #6b7280; padding: 32px;">No pitch data available</div>';
+            } else {
+                Object.entries(pitchTypeStats).forEach(([type, stats]) => {
+                    const color = getPitchColor(type);
+                    const width = Math.min(parseFloat(stats.avgVelo) / 100 * 100, 100);
+                    
+                    html += `
+                        <div class="velocity-item">
+                            <div class="pitch-color" style="background-color: ${color}"></div>
+                            <span class="pitch-label">${type}</span>
+                            <div class="velocity-bar">
+                                <div class="velocity-fill" style="background-color: ${color}; width: ${width}%"></div>
+                                <div class="velocity-text">${stats.avgVelo} mph</div>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+            
+            html += '</div>';
+            return html;
+        }
+
+        function renderBreakChart(pitchTypeStats, pitcherData) {
+            const pitchesWithMovement = pitcherData.filter(pitch => 
+                pitch && 
+                pitch.HorzBreak != null && 
+                pitch.InducedVertBreak != null && 
+                pitch.TaggedPitchType &&
+                !isNaN(pitch.HorzBreak) &&
+                !isNaN(pitch.InducedVertBreak)
+            );
+
+            let html = '<div class="chart-container"><h3 class="chart-title">Pitch Breaks</h3>';
+            
+            html += `
+                <svg class="break-chart" viewBox="-30 -30 60 60">
+                    <defs>
+                        <pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse">
+                            <path d="M 10 0 L 0 0 0 10" fill="none" stroke="#ddd" stroke-width="0.5"/>
+                        </pattern>
+                    </defs>
+                    <rect x="-30" y="-30" width="60" height="60" fill="url(#grid)" />
+                    
+                    <line x1="-25" y1="0" x2="25" y2="0" stroke="#666" stroke-width="1"/>
+                    <line x1="0" y1="-25" x2="0" y2="25" stroke="#666" stroke-width="1"/>
+                    
+                    <text x="2" y="-22" font-size="8" fill="#666">↑</text>
+                    <text x="2" y="22" font-size="8" fill="#666">↓</text>
+            `;
+            
+            pitchesWithMovement.forEach((pitch, index) => {
+                const x = parseFloat(pitch.HorzBreak) * 0.8;
+                const y = -parseFloat(pitch.InducedVertBreak) * 0.8;
+                
+                if (Math.abs(x) <= 25 && Math.abs(y) <= 25) {
+                    html += `
+                        <circle
+                            cx="${x}"
+                            cy="${y}"
+                            r="1"
+                            fill="${getPitchColor(pitch.TaggedPitchType)}"
+                            opacity="0.8"
+                            stroke="white"
+                            stroke-width="0.3"
+                        />
+                    `;
+                }
+            });
+            
+            html += '</svg>';
+            
+            if (pitchTypeStats && Object.keys(pitchTypeStats).length > 0) {
+                html += '<div class="legend">';
+                Object.keys(pitchTypeStats).forEach(type => {
+                    html += `
+                        <div class="legend-item">
+                            <div class="legend-color" style="background-color: ${getPitchColor(type)}"></div>
+                            <span>${type}</span>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+            }
+            
+            html += '</div>';
+            return html;
+        }
+
+        function renderPitchTable(pitchTypeStats) {
+            if (!pitchTypeStats || Object.keys(pitchTypeStats).length === 0) {
+                return '<div class="table-container" style="text-align: center; padding: 32px; color: #6b7280;">No pitch data available</div>';
+            }
+
+            let html = `
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Pitch Name</th>
+                                <th>Count</th>
+                                <th>Pitch%</th>
+                                <th>Velocity</th>
+                                <th>Spin</th>
+                                <th>iVB</th>
+                                <th>HB</th>
+                                <th>Whiff%</th>
+                                <th>Zone%</th>
+                                <th>Chase%</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            const sortedPitches = Object.entries(pitchTypeStats).sort(([,a], [,b]) => b.count - a.count);
+            
+            sortedPitches.forEach(([type, stats]) => {
+                html += `
+                    <tr>
+                        <td style="background-color: ${getPitchColor(type)}">${type}</td>
+                        <td>${stats.count}</td>
+                        <td>${stats.percentage}%</td>
+                        <td>${stats.avgVelo}</td>
+                        <td>${stats.avgSpin}</td>
+                        <td>${stats.avgVertBreak}</td>
+                        <td>${stats.avgHorzBreak}</td>
+                        <td>${stats.whiffRate}%</td>
+                        <td>${stats.zoneRate}%</td>
+                        <td>${stats.chaseRate}%</td>
+                    </tr>
+                `;
+            });
+            
+            const totalPitches = Object.values(pitchTypeStats).reduce((sum, stats) => sum + stats.count, 0);
+            
+            html += `
+                        <tr class="totals-row">
+                            <td>All</td>
+                            <td>${totalPitches}</td>
+                            <td>100.0%</td>
+                            <td>—</td>
+                            <td>—</td>
+                            <td>—</td>
+                            <td>—</td>
+                            <td>—</td>
+                            <td>—</td>
+                            <td>—</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            `;
+            
+            return html;
+        }
+
+        function changePitcher(pitcher) {
+            selectedPitcher = pitcher;
+            renderApp();
+        }
+
+        function shareReport() {
+            const element = document.getElementById('app-content');
+            const shareButton = document.querySelector('.share-button');
+            const saveButton = document.querySelector('.save-button');
+            
+            // Temporarily hide the buttons
+            shareButton.style.display = 'none';
+            saveButton.style.display = 'none';
+            
+            html2canvas(element, {
+                scale: 2,
+                useCORS: true,
+                allowTaint: true,
+                backgroundColor: '#f9fafb'
+            }).then(function(canvas) {
+                // Show the buttons again
+                shareButton.style.display = 'block';
+                saveButton.style.display = 'block';
+                
+                canvas.toBlob(function(blob) {
+                    const fileName = `${formatPitcherName(selectedPitcher).replace(/[^a-zA-Z0-9]/g, '_')}_pitching_report.png`;
+                    
+                    // Check if Web Share API is supported (mobile browsers)
+                    if (navigator.share && navigator.canShare) {
+                        const file = new File([blob], fileName, { type: 'image/png' });
+                        
+                        if (navigator.canShare({ files: [file] })) {
+                            navigator.share({
+                                title: `${formatPitcherName(selectedPitcher)} Pitching Report`,
+                                text: `Pitching statistics for ${formatPitcherName(selectedPitcher)}`,
+                                files: [file]
+                            }).catch(function(error) {
+                                console.log('Share cancelled or failed:', error);
+                                // Fallback to download
+                                downloadImage(canvas, fileName);
+                            });
+                        } else {
+                            // Share without file (just text and title)
+                            navigator.share({
+                                title: `${formatPitcherName(selectedPitcher)} Pitching Report`,
+                                text: `Check out the pitching statistics for ${formatPitcherName(selectedPitcher)}`,
+                                url: window.location.href
+                            }).catch(function(error) {
+                                console.log('Share cancelled or failed:', error);
+                                // Fallback to download
+                                downloadImage(canvas, fileName);
+                            });
+                        }
+                    } else {
+                        // Fallback for desktop browsers - just download
+                        downloadImage(canvas, fileName);
+                    }
+                }, 'image/png');
+                
+            }).catch(function(error) {
+                shareButton.style.display = 'block';
+                saveButton.style.display = 'block';
+                alert('Error creating image. Please try again.');
+                console.error('Error:', error);
+            });
+        }
+        
+        function downloadImage(canvas, fileName) {
+            const link = document.createElement('a');
+            link.download = fileName;
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+
+        function saveAsImage() {
+            const element = document.getElementById('app-content');
+            const button = document.querySelector('.save-button');
+            const shareButton = document.querySelector('.share-button');
+            
+            // Temporarily hide the buttons
+            button.style.display = 'none';
+            shareButton.style.display = 'none';
+            
+            html2canvas(element, {
+                scale: 2,
+                useCORS: true,
+                allowTaint: true,
+                backgroundColor: '#f9fafb'
+            }).then(function(canvas) {
+                // Show the buttons again
+                button.style.display = 'block';
+                shareButton.style.display = 'block';
+                
+                const fileName = `${formatPitcherName(selectedPitcher).replace(/[^a-zA-Z0-9]/g, '_')}_pitching_report.png`;
+                downloadImage(canvas, fileName);
+                
+            }).catch(function(error) {
+                button.style.display = 'block';
+                shareButton.style.display = 'block';
+                alert('Error saving image. Please try again.');
+                console.error('Error:', error);
+            });
+        }
+
+        function formatPitcherName(name) {
+            // Convert "Last, First" to "First Last"
+            if (name.includes(',')) {
+                const parts = name.split(',');
+                const lastName = parts[0].trim();
+                const firstName = parts[1] ? parts[1].trim() : '';
+                return firstName ? `${firstName} ${lastName}` : lastName;
+            }
+            return name;
+        }
+
+        function getInitials(name) {
+            const formattedName = formatPitcherName(name);
+            const parts = formattedName.split(' ');
+            return parts.length >= 2 ? parts[0].charAt(0) + parts[1].charAt(0) : parts[0].charAt(0);
+        }
+
+        function renderApp() {
+            const pitcherData = allData.filter(row => row && row.Pitcher === selectedPitcher);
+            const stats = calculatePitcherStats(pitcherData);
+            
+            const displayName = formatPitcherName(selectedPitcher);
+            const initials = getInitials(selectedPitcher);
+            
+            const html = `
+                <div class="header">
+                    <div class="header-content">
+                        <div class="player-info">
+                            <div class="player-avatar">${initials}</div>
+                            <div>
+                                <h1 class="player-name">${displayName}</h1>
+                                <p class="player-subtitle">Pitching Summary</p>
+                                <p class="player-subtitle" style="font-style: italic;">2025 NECBL Season</p>
+                            </div>
+                        </div>
+                        <div class="controls">
+                            <select class="pitcher-select" onchange="changePitcher(this.value)" value="${selectedPitcher}">
+                                ${pitchers.map(pitcher => 
+                                    `<option value="${pitcher}" ${pitcher === selectedPitcher ? 'selected' : ''}>${pitcher}</option>`
+                                ).join('')}
+                            </select>
+                            <div class="button-group">
+                                <button class="save-button" onclick="saveAsImage()">Save as Image</button>
+                                <button class="share-button" onclick="shareReport()">Share</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-value">${stats.totalPitches}</div>
+                            <div class="stat-label">Total Pitches</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${stats.plateAppearances}</div>
+                            <div class="stat-label">PA</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${stats.strikeoutRate.toFixed(1)}%</div>
+                            <div class="stat-label">K%</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${stats.walkRate.toFixed(1)}%</div>
+                            <div class="stat-label">BB%</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${stats.kMinusBBRate.toFixed(1)}%</div>
+                            <div class="stat-label">K-BB%</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${stats.whiffRate.toFixed(1)}%</div>
+                            <div class="stat-label">Whiff%</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${stats.zoneRate.toFixed(1)}%</div>
+                            <div class="stat-label">Zone%</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${stats.chaseRate.toFixed(1)}%</div>
+                            <div class="stat-label">Chase%</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="charts-grid">
+                    ${renderVelocityChart(stats.pitchTypeStats)}
+                    ${renderBreakChart(stats.pitchTypeStats, pitcherData)}
+                </div>
+
+                <div class="table-title">Pitch Arsenal Analysis</div>
+                ${renderPitchTable(stats.pitchTypeStats)}
+
+                <div style="text-align: center; font-size: 14px; color: #6b7280; margin-top: 32px;">
+                    Data: TrackMan
+                </div>
+            `;
+            
+            document.getElementById('app-content').innerHTML = html;
+        }
+    </script>
+</body>
+</html>
