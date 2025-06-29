@@ -364,11 +364,11 @@
 <body>
     <div class="container">
         <div class="logo-container">
-            <!-- To use the Navigators logo, download it and save as 'navs_logo.png' in the same folder as this HTML file -->
+            <!-- First try the local logo, then fallback to external URL, then text -->
             <img src="navs_logo.png" 
                  alt="Navigators Logo" 
                  class="logo"
-                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+                 onerror="this.src='https://nsnavs.com.ismmedia.com/ISM3/std-content/repos/Top/Team/Opponents/navs_logo_new.png'; this.onerror=function(){this.style.display='none'; this.nextElementSibling.style.display='flex';};" />
             <div style="width:120px;height:80px;background:#1e40af;border-radius:12px;display:none;align-items:center;justify-content:center;font-weight:bold;font-size:18px;color:white;font-family:serif;text-align:center;">NAVIGATORS</div>
         </div>
         
@@ -526,6 +526,7 @@
             pitchTypes.forEach(type => {
                 const typePitches = pitcherData.filter(p => p.TaggedPitchType === type);
                 const avgVelo = _.mean(typePitches.map(p => p.RelSpeed).filter(Boolean));
+                const maxVelo = _.max(typePitches.map(p => p.RelSpeed).filter(Boolean));
                 const avgSpin = _.mean(typePitches.map(p => p.SpinRate).filter(Boolean));
                 const avgHorzBreak = _.mean(typePitches.map(p => p.HorzBreak).filter(Boolean));
                 const avgVertBreak = _.mean(typePitches.map(p => p.InducedVertBreak).filter(Boolean));
@@ -559,6 +560,7 @@
                     count: typePitches.length,
                     percentage: (typePitches.length / totalPitches * 100).toFixed(1),
                     avgVelo: avgVelo ? avgVelo.toFixed(1) : '0',
+                    maxVelo: maxVelo ? maxVelo.toFixed(1) : '0',
                     avgSpin: avgSpin ? Math.round(avgSpin) : 0,
                     avgHorzBreak: avgHorzBreak ? avgHorzBreak.toFixed(1) : '0',
                     avgVertBreak: avgVertBreak ? avgVertBreak.toFixed(1) : '0',
@@ -685,6 +687,7 @@
                                 <th>Count</th>
                                 <th>Pitch%</th>
                                 <th>Velocity</th>
+                                <th>Max</th>
                                 <th>Spin</th>
                                 <th>iVB</th>
                                 <th>HB</th>
@@ -705,6 +708,7 @@
                         <td>${stats.count}</td>
                         <td>${stats.percentage}%</td>
                         <td>${stats.avgVelo}</td>
+                        <td>${stats.maxVelo}</td>
                         <td>${stats.avgSpin}</td>
                         <td>${stats.avgVertBreak}</td>
                         <td>${stats.avgHorzBreak}</td>
@@ -722,6 +726,7 @@
                             <td>All</td>
                             <td>${totalPitches}</td>
                             <td>100.0%</td>
+                            <td>—</td>
                             <td>—</td>
                             <td>—</td>
                             <td>—</td>
