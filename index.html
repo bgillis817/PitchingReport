@@ -147,7 +147,7 @@
         
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
             gap: 16px;
         }
         
@@ -448,6 +448,7 @@
                     strikeoutRate: 0,
                     walkRate: 0,
                     kMinusBBRate: 0,
+                    cswRate: 0,
                     ballsInPlay: 0
                 };
             }
@@ -501,6 +502,11 @@
             const strikeoutRate = plateAppearances > 0 ? (strikeouts / plateAppearances * 100) : 0;
             const walkRate = plateAppearances > 0 ? (walks / plateAppearances * 100) : 0;
             const kMinusBBRate = strikeoutRate - walkRate;
+            
+            // CSW% calculation
+            const calledStrikes = pitcherData.filter(row => row.PitchCall === 'StrikeCalled').length;
+            const swingingStrikes = pitcherData.filter(row => row.PitchCall === 'StrikeSwinging').length;
+            const cswRate = totalPitches > 0 ? ((calledStrikes + swingingStrikes) / totalPitches * 100) : 0;
 
             return {
                 totalPitches,
@@ -514,6 +520,7 @@
                 strikeoutRate,
                 walkRate,
                 kMinusBBRate,
+                cswRate,
                 ballsInPlay: ballsInPlay.length
             };
         }
@@ -915,6 +922,10 @@
                         <div class="stat-card">
                             <div class="stat-value">${stats.kMinusBBRate.toFixed(1)}%</div>
                             <div class="stat-label">K-BB%</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${stats.cswRate.toFixed(1)}%</div>
+                            <div class="stat-label">CSW%</div>
                         </div>
                         <div class="stat-card">
                             <div class="stat-value">${stats.whiffRate.toFixed(1)}%</div>
